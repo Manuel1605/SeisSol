@@ -6,23 +6,23 @@
 !! @author Sebastian Rettenberger (sebastian.rettenberger @ tum.de, http://www5.in.tum.de/wiki/index.php/Sebastian_Rettenberger)
 !!
 !! @section LICENSE
-!! Copyright (c) 2015, SeisSol Group
+!! Copyright (c) 2015-2017, SeisSol Group
 !! All rights reserved.
-!! 
+!!
 !! Redistribution and use in source and binary forms, with or without
 !! modification, are permitted provided that the following conditions are met:
-!! 
+!!
 !! 1. Redistributions of source code must retain the above copyright notice,
 !!    this list of conditions and the following disclaimer.
-!! 
+!!
 !! 2. Redistributions in binary form must reproduce the above copyright notice,
 !!    this list of conditions and the following disclaimer in the documentation
 !!    and/or other materials provided with the distribution.
-!! 
+!!
 !! 3. Neither the name of the copyright holder nor the names of its
 !!    contributors may be used to endorse or promote products derived from this
 !!    software without specific prior written permission.
-!! 
+!!
 !! THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 !! AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 !! IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -108,8 +108,6 @@ module f_ctof_bind_interoperability
       type(c_ptr), value                     :: i_timeStepWidth
       real*8, pointer                        :: l_timeStepWidth
 
-      integer :: i, rank_int
-
       ! register scorep region dynamic rupture
       SCOREP_USER_REGION_DEFINE( r_dr )
       SCOREP_USER_REGION_DEFINE( r_dr_output )
@@ -122,6 +120,7 @@ module f_ctof_bind_interoperability
       call c_f_pointer( i_timeStepWidth, l_timeStepWidth )
 
       SCOREP_USER_REGION_BEGIN( r_dr_output, "fault_output", SCOREP_USER_REGION_TYPE_COMMON )
+      ! NOTE: This will only handle faul receivers
       call faultoutput(l_domain%eqn, l_domain%disc, l_domain%mesh, l_domain%io, l_domain%mpi, l_domain%optionalFields%BackgroundValue, l_domain%bnd, l_time, l_timeStepWidth)
       SCOREP_USER_REGION_END( r_dr_output )
 
@@ -131,6 +130,28 @@ module f_ctof_bind_interoperability
 
       SCOREP_USER_REGION_END( r_dr )
     end subroutine
+
+    subroutine f_interoperability_calcElementwiseFaultoutput(i_domain, time) bind (c, name="f_interoperability_calcElementwiseFaultoutput")
+      use iso_c_binding
+      use typesDef
+      use faultoutput_mod
+      implicit none
+
+      type( c_ptr ), value         :: i_domain
+      real( kind=c_double ), value :: time
+
+      type(tUnstructDomainDescript), pointer :: domain
+      integer :: OutputPointType
+
+      ! convert c to fortran pointers
+      call c_f_pointer(i_domain, domain)
+
+      OutputPointType = domain%DISC%DynRup%OutputPointType
+      domain%DISC%DynRup%OutputPointType = 4
+      call calc_FaultOutput(domain%DISC%DynRup%DynRup_out_elementwise, domain%DISC, domain%EQN, domain%MESH, &
+          domain%optionalFields%BackgroundValue, domain%BND, time)
+      domain%DISC%DynRup%OutputPointType = OutputPointType
+    end subroutine f_interoperability_calcElementwiseFaultoutput
 
     subroutine f_interoperability_computePlasticity( i_domain, i_timeStep, &
             i_numberOfAlignedBasisFunctions, i_plasticParameters, i_initialLoading, io_dofs, io_Energy, io_pstrain ) bind( c, name='f_interoperability_computePlasticity')
@@ -265,27 +286,27 @@ module f_ctof_bind_interoperability
       type(c_ptr), value                     :: i_domain
       type(tUnstructDomainDescript), pointer :: l_domain
 
-      real(kind=c_double), value             :: i_x, i_y, i_z      
+      real(kind=c_double), value             :: i_x, i_y, i_z
       integer(kind=c_int), value             :: i_elem
 
       type(c_ptr), value                     :: o_mInvJInvPhisAtSources
       real*8, pointer                        :: l_mInvJInvPhisAtSources(:)
-      
+
       real                                   :: l_xi, l_eta, l_zeta
       integer                                :: indices(4) ! == MESH%nVertices_Tet
       integer                                :: l_elem, l_dof
       real                                   :: vx(4), vy(4), vz(4)
-      
+
       call c_f_pointer( i_domain,                 l_domain                                              )
       call c_f_pointer( o_mInvJInvPhisAtSources,  l_mInvJInvPhisAtSources,  [NUMBER_OF_BASIS_FUNCTIONS] )
-      
+
       ! f_elem = c_elem + 1
       l_elem = i_elem + 1
       indices = l_domain%MESH%ELEM%Vertex(1:l_domain%MESH%nVertices_Tet, l_elem)
       vx = l_domain%MESH%VRTX%xyNode(1, indices)
       vy = l_domain%MESH%VRTX%xyNode(2, indices)
       vz = l_domain%MESH%VRTX%xyNode(3, indices)
-      
+
       call TrafoXYZ2XiEtaZeta(xi    = l_xi,   &
                               eta   = l_eta,  &
                               zeta  = l_zeta, &
