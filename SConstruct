@@ -130,6 +130,8 @@ vars.AddVariables(
 
   BoolVariable( 'asagi', 'use asagi for material input', False ),
 
+  BoolVariable( 'impalajit', 'use impalajit for initialization', False ),
+
   BoolVariable( 'memkind', 'use memkind library for hbw memory support', False ),
 
   EnumVariable( 'unitTests', 'builds additional unit tests',
@@ -546,6 +548,12 @@ if env['asagi']:
 
     env.Tool('AsagiTool', parallel=(env['parallelization'] in ['hybrid', 'mpi']), required=(not helpMode))
     env.Append(CPPDEFINES=['USE_ASAGI'])
+
+
+# ImpalaJIT
+if env['impalajit']:
+    env.Append(CPPDEFINES=['USE_IMPALAJIT'])
+    env.Tool('ImpalaJITTool',  required=True,  parallel=(env['parallelization'] in ['hybrid', 'mpi']))
 
 # ASYNC I/O
 env.Append(CPPPATH=['#/submodules/async'])
