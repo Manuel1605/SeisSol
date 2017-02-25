@@ -39,6 +39,9 @@
 #else
 #include "Initializer/preProcessorMacros.fpp"
 #endif
+#ifdef USE_IMPALAJIT
+#include "impalajit.f90"
+#endif
 
 MODULE ini_MODEL_mod
   !--------------------------------------------------------------------------
@@ -85,6 +88,10 @@ CONTAINS
     USE read_backgroundstress_mod
     USE ini_model_DR_mod
     use VelocityFieldReader
+    #ifdef USE_IMPALAJIT
+    use impalajit
+    use, intrinsic :: iso_c_binding
+    #endif
 
     !--------------------------------------------------------------------------
     IMPLICIT NONE
@@ -150,6 +157,11 @@ CONTAINS
     INTEGER                         :: LocElemType                            ! Type of element
     REAL                            :: Pf, b13, b33, b11                      ! fluid pressure and coeffcients for special initial loading in TPV26/TPV27
     INTEGER                         :: InterpolationScheme = 1                ! Select the interpolation scheme (linear=1, cubic=else)
+#ifdef USE_IMPALAJIT
+    TYPE( c_ptr )                   :: handle
+    TYPE( c_funptr )                :: cfp
+    PROCEDURE(impala_fun_template), pointer :: fpp
+#endif
     !--------------------------------------------------------------------------
     INTENT(IN)                      :: MESH,IC
     INTENT(OUT)                     :: MaterialVal
@@ -595,25 +607,41 @@ CONTAINS
 
 
       CASE(33)     ! T. Ulrich TPV33 14.01.16
+  !      real :: start, finish
+  !      CALL cpu_time(start)
+
         DO iElem = 1, MESH%nElem
-           !iLayer = MESH%ELEM%Reference(0,iElem)        ! Zone number is given by reference 0 
+           !iLayer = MESH%ELEM%Reference(0,iElem)        ! Zone number is given by reference 0
            y = MESH%ELEM%xyBary(2,iElem) !average y inside an element
-           IF(y.LT.-800d0) THEN                         ! zone -800
-               MaterialVal(iElem,1) = 2670. 
+#ifdef USE_IMPALJIT
+            handle = impalajit_compiler_create_with_config("impala.conf")
+            CALL impalajit_compiler_compile(handle)
+            cfp = impalajit_compiler_get_function(handle, "getMaterialVal")
+            CALL c_f_procpointer(cfp, fpp)
+           DO i=1, 3
+                MaterialVal(iElem,i)=fpp(y, dble(i))
+           ENDDO
+#else
+            IF(y.LT.-800d0) THEN                         ! zone -800
+               MaterialVal(iElem,1) = 2670.
                MaterialVal(iElem,2) = 2.816717568E+10
                MaterialVal(iElem,3) = 2.817615756E+10
            ELSEIF ((y.GE.-800d0).AND.(y.LE.800d0)) THEN                     ! zone central
-               MaterialVal(iElem,1) = 2670. 
+               MaterialVal(iElem,1) = 2670.
                MaterialVal(iElem,2) = 1.251489075E+10
                MaterialVal(iElem,3) = 1.251709350E+10
            ELSEIF(y.GT.800d0) THEN                                          ! zone + 800
-               MaterialVal(iElem,1) = 2670. 
+               MaterialVal(iElem,1) = 2670.
                MaterialVal(iElem,2) = 3.203812032E+10
                MaterialVal(iElem,3) = 3.204375936E+10
            ELSE
               logError(*) iLayer, ":zone (region) unknown"
            ENDIF
+#endif
         ENDDO
+
+    !    CALL cpu_time(finish)
+    !    write (*,*) 'Initialization time: ', finish-start
 
       CASE(60) ! special case of 1D layered medium, imposed without meshed layers for Landers 1992
                ! after Wald and Heaton 1994, Table 1
