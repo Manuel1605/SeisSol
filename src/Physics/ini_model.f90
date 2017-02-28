@@ -88,10 +88,10 @@ CONTAINS
     USE read_backgroundstress_mod
     USE ini_model_DR_mod
     use VelocityFieldReader
-    #ifdef USE_IMPALAJIT
+#ifdef USE_IMPALAJIT
     use impalajit
     use, intrinsic :: iso_c_binding
-    #endif
+#endif
 
     !--------------------------------------------------------------------------
     IMPLICIT NONE
@@ -613,7 +613,7 @@ CONTAINS
         DO iElem = 1, MESH%nElem
            !iLayer = MESH%ELEM%Reference(0,iElem)        ! Zone number is given by reference 0
            y = MESH%ELEM%xyBary(2,iElem) !average y inside an element
-#ifdef USE_IMPALJIT
+#ifdef USE_IMPALAJIT
             handle = impalajit_compiler_create_with_config("impala.conf")
             CALL impalajit_compiler_compile(handle)
             cfp = impalajit_compiler_get_function(handle, "getMaterialVal")
