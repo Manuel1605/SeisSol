@@ -162,6 +162,8 @@ CONTAINS
     TYPE( c_funptr )                :: cfp
     PROCEDURE(impala_fun_template), pointer :: fpp
 #endif
+     INTEGER ::  start, ende, rate, cmax
+     REAL ::  time
     !--------------------------------------------------------------------------
     INTENT(IN)                      :: MESH,IC
     INTENT(OUT)                     :: MaterialVal
@@ -607,8 +609,7 @@ CONTAINS
 
 
       CASE(33)     ! T. Ulrich TPV33 14.01.16
-  !      real :: start, finish
-  !      CALL cpu_time(start)
+	call system_clock(start,rate,cmax)
 
         DO iElem = 1, MESH%nElem
            !iLayer = MESH%ELEM%Reference(0,iElem)        ! Zone number is given by reference 0
@@ -640,8 +641,10 @@ CONTAINS
 #endif
         ENDDO
 
-    !    CALL cpu_time(finish)
-    !    write (*,*) 'Initialization time: ', finish-start
+	call system_clock(ende)
+	time=float(ende-start) ! evtl. cmax beachten!
+	write(*,*) "Zeit in Millisekunden: ",time
+	write(*,*) "Zeit in Sekunden: ", time/float(rate)
 
       CASE(60) ! special case of 1D layered medium, imposed without meshed layers for Landers 1992
                ! after Wald and Heaton 1994, Table 1
