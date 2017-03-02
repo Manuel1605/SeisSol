@@ -96,6 +96,15 @@ CONTAINS
     !--------------------------------------------------------------------------
     IMPLICIT NONE
     !--------------------------------------------------------------------------
+#ifdef USE_IMPALAJIT
+    ABSTRACT INTERFACE
+        FUNCTION impala_fun_template (a1, a2) BIND(c)
+            USE, INTRINSIC :: ISO_C_BINDING
+            REAL(C_DOUBLE), INTENT(IN), VALUE   :: a1, a2
+            REAL(C_DOUBLE) 			            :: impala_fun_template
+        END FUNCTION impala_fun_template
+    END INTERFACE
+#endif
     ! Argument list declaration
     TYPE (tEquations)               :: EQN
     TYPE (tUnstructMesh)            :: MESH
@@ -157,6 +166,7 @@ CONTAINS
     INTEGER                         :: LocElemType                            ! Type of element
     REAL                            :: Pf, b13, b33, b11                      ! fluid pressure and coeffcients for special initial loading in TPV26/TPV27
     INTEGER                         :: InterpolationScheme = 1                ! Select the interpolation scheme (linear=1, cubic=else)
+    REAL(Kind=8)                    :: test
 #ifdef USE_IMPALAJIT
     TYPE( c_ptr )                   :: handle
     TYPE( c_funptr )                :: cfp
@@ -622,10 +632,9 @@ CONTAINS
            !iLayer = MESH%ELEM%Reference(0,iElem)        ! Zone number is given by reference 0
            y = MESH%ELEM%xyBary(2,iElem) !average y inside an element
 #ifdef USE_IMPALAJIT
-           MaterialVal(iElem,1)=fpp(y, 1.0)
-           MaterialVal(iElem,2)=fpp(y, 2.0)
-           MaterialVal(iElem,1)=fpp(y, 3.0)
-
+           MaterialVal(iElem,1)=fpp(y, 1.0d0)
+           MaterialVal(iElem,2)=fpp(y, 2.0d0)
+           MaterialVal(iElem,3)=fpp(y, 3.0d0)
 #else
            IF(y.LT.-800d0) THEN                         ! zone -800
                MaterialVal(iElem,1) = 2670.
@@ -835,9 +844,9 @@ CONTAINS
 #ifdef USE_IMPALAJIT
         DO iElem = 1, MESH%nElem
             z = MESH%ELEM%xyBary(3,iElem)
-            MaterialVal(iElem, 1) = fpp(z, 1.0);
-            MaterialVal(iElem, 2) = fpp(z, 2.0);
-            MaterialVal(iElem, 3) = fpp(z, 3.0);
+            MaterialVal(iElem, 1) = fpp(z, 1.0d0);
+            MaterialVal(iElem, 2) = fpp(z, 2.0d0);
+            MaterialVal(iElem, 3) = fpp(z, 3.0d0);
         ENDDO
 #else
         !
