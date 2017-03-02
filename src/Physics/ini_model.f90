@@ -616,17 +616,18 @@ CONTAINS
 
 
       CASE(33)     ! T. Ulrich TPV33 14.01.16
-	call system_clock(start,rate,cmax)
-
+	    call system_clock(start,rate,cmax)
+        write(*,*) "Starting Initialization..."
         DO iElem = 1, MESH%nElem
            !iLayer = MESH%ELEM%Reference(0,iElem)        ! Zone number is given by reference 0
            y = MESH%ELEM%xyBary(2,iElem) !average y inside an element
 #ifdef USE_IMPALAJIT
-           DO i=1, 3
-                MaterialVal(iElem,i)=fpp(y, dble(i))
-           ENDDO
+           MaterialVal(iElem,1)=fpp(y, 1.0)
+           MaterialVal(iElem,2)=fpp(y, 2.0)
+           MaterialVal(iElem,1)=fpp(y, 3.0)
+
 #else
-            IF(y.LT.-800d0) THEN                         ! zone -800
+           IF(y.LT.-800d0) THEN                         ! zone -800
                MaterialVal(iElem,1) = 2670.
                MaterialVal(iElem,2) = 2.816717568E+10
                MaterialVal(iElem,3) = 2.817615756E+10
@@ -643,7 +644,9 @@ CONTAINS
            ENDIF
 #endif
         ENDDO
-
+        call system_clock(ende)
+        time=float(ende-start) ! evtl. cmax beachten!
+        write(*,*) "Initialization Time (ms): ",time
 
 
       CASE(60) ! special case of 1D layered medium, imposed without meshed layers for Landers 1992
@@ -828,12 +831,13 @@ CONTAINS
       ! Northridge regional 1D velocity structure for rock sites after Wald et al. 1996
 
         call system_clock(start,rate,cmax)
+        write(*,*) "Starting Initialization..."
 #ifdef USE_IMPALAJIT
         DO iElem = 1, MESH%nElem
             z = MESH%ELEM%xyBary(3,iElem)
-            MaterialVal(iElem, 1) = fpp(z, dble(1));
-            MaterialVal(iElem, 2) = fpp(z, dble(2));
-            MaterialVal(iElem, 3) = fpp(z, dble(3));
+            MaterialVal(iElem, 1) = fpp(z, 1.0);
+            MaterialVal(iElem, 2) = fpp(z, 2.0);
+            MaterialVal(iElem, 3) = fpp(z, 3.0);
         ENDDO
 #else
         !
@@ -864,7 +868,7 @@ CONTAINS
 #endif
         call system_clock(ende)
         time=float(ende-start) ! evtl. cmax beachten!
-        write(*,*) "Zeit in Millisekunden: ",time
+        write(*,*) "Initialization Time (ms): ",time
 
       !
       CASE(101) ! special case of 3D complex medium, imposed without meshed layers
