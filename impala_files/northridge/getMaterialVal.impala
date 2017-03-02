@@ -1,0 +1,96 @@
+getMaterialVal(z, i){
+    bedrockVelModel_1_1         =   10000;
+    bedrockVelModel_1_2         =   2100;
+    bedrockVelModel_1_3         =   2100000000;
+    bedrockVelModel_1_4         =   3381000000;
+
+    bedrockVelModel_2_1         =   -500;
+    bedrockVelModel_2_2         =   2400;
+    bedrockVelModel_2_3         =   9600000000;
+    bedrockVelModel_2_4         =   19200000000;
+
+    bedrockVelModel_3_1         =   -1500;
+    bedrockVelModel_3_2         =   2700;
+    bedrockVelModel_3_3         =   27648000000;
+    bedrockVelModel_3_4         =   38556000000;
+
+    bedrockVelModel_4_1         =   -40000;
+    bedrockVelModel_4_2         =   2800;
+    bedrockVelModel_4_3         =   36288000000;
+    bedrockVelModel_4_4         =   38556000000;
+
+    bedrockVelModel_5_1         =   -270000;
+    bedrockVelModel_5_2         =   2900;
+    bedrockVelModel_5_3         =   44109000000;
+    bedrockVelModel_5_4         =   45878000000;
+
+    bedrockVelModel_6_1         =   -400000;
+    bedrockVelModel_6_2         =   3300;
+    bedrockVelModel_6_3         =   66825000000;
+    bedrockVelModel_6_4         =   67122000000;
+
+    if(z < bedrockVelModel_1_1 && z >= bedrockVelModel_2_1) {
+        if(i==1){
+            return bedrockVelModel_1_2;
+        }
+        if(i==2){
+            return bedrockVelModel_1_3;
+        }
+        if(i==3){
+            return bedrockVelModel_1_4;
+        }
+    }
+    if(z < bedrockVelModel_2_1) && z >= bedrockVelModel_3_1) {
+        if(i==1){
+            return bedrockVelModel_2_2;
+        }
+        if(i==2){
+            return bedrockVelModel_2_3;
+        }
+        if(i==3){
+            return bedrockVelModel_2_4;
+        }
+    }
+    if(z < bedrockVelModel_3_1  && z >= bedrockVelModel_4_1) {
+        if(i==1){
+            return bedrockVelModel_3_2;
+        }
+        if(i==2){
+            return bedrockVelModel_3_3;
+        }
+        if(i==3){
+            return bedrockVelModel_3_4;
+        }
+    }
+    if(z < bedrockVelModel_4_1 && z >= bedrockVelModel_5_1) {
+        if(i==1){
+            return bedrockVelModel_4_2;
+        }
+        if(i==2){
+            return bedrockVelModel_4_3;
+        }
+        if(i==3){
+            return bedrockVelModel_4_4;
+        }
+    }
+    if(z < bedrockVelModel_5_1 && z >= bedrockVelModel_6_1) {
+        if(i==1){
+            return bedrockVelModel_5_2;
+        }
+        if(i==2){
+            return bedrockVelModel_5_3;
+        }
+        if(i==3){
+            return bedrockVelModel_5_4;
+        }
+    }
+    if(i==1){
+        return bedrockVelModel_6_2;
+    }
+    if(i==2){
+        return bedrockVelModel_6_3;
+    }
+    if(i==3){
+        return bedrockVelModel_6_4;
+    }
+}

@@ -188,6 +188,13 @@ CONTAINS
         EQN%IniStress(:,:) = 0.0D0
     ENDIF
 
+#ifdef USE_IMPALAJIT
+    handle = impalajit_compiler_create_with_config("impala.conf")
+    CALL impalajit_compiler_compile(handle)
+    cfp = impalajit_compiler_get_function(handle, "getMaterialVal")
+    CALL c_f_procpointer(cfp, fpp)
+#endif
+
       SELECT CASE(EQN%LinType)
       CASE(0)
         MaterialVal(:,1) = EQN%rho0
@@ -615,10 +622,6 @@ CONTAINS
            !iLayer = MESH%ELEM%Reference(0,iElem)        ! Zone number is given by reference 0
            y = MESH%ELEM%xyBary(2,iElem) !average y inside an element
 #ifdef USE_IMPALAJIT
-            handle = impalajit_compiler_create_with_config("impala.conf")
-            CALL impalajit_compiler_compile(handle)
-            cfp = impalajit_compiler_get_function(handle, "getMaterialVal")
-            CALL c_f_procpointer(cfp, fpp)
            DO i=1, 3
                 MaterialVal(iElem,i)=fpp(y, dble(i))
            ENDDO
@@ -826,7 +829,16 @@ CONTAINS
       !
       CASE(100) ! special case of 1D layered medium, imposed without meshed layers
       ! Northridge regional 1D velocity structure for rock sites after Wald et al. 1996
-         !
+
+#ifdef USE_IMPALAJIT
+        DO iElem = 1, MESH%nElem
+            z = MESH%ELEM%xyBary(3,iElem)
+            MaterialVal(iElem, 1) = fpp(z, dble(1));
+            MaterialVal(iElem, 2) = fpp(z, dble(2));
+            MaterialVal(iElem, 3) = fpp(z, dble(3));
+        ENDDO
+#else
+        !
          ! Layer                   depth    rho     mu          lambda
          BedrockVelModel(1,:) = (/ 10000.0, 2100.0, 2.10e09, 3.3810e09/)
          BedrockVelModel(2,:) = (/ -500.0, 2400.0, 9.60e09, 1.920e10/)
@@ -836,22 +848,23 @@ CONTAINS
          BedrockVelModel(6,:) = (/ -400000.0, 3300.0, 6.68250e10, 6.71220e10/)
          !
          DO iElem = 1, MESH%nElem
-         z = MESH%ELEM%xyBary(3,iElem)
-         IF ((z.LT.BedrockVelModel(1,1)).AND.(z.GE.BedrockVelModel(2,1))) THEN
-             MaterialVal(iElem,1:3) =   BedrockVelModel(1,2:4)
-         ELSEIF ((z.LT.BedrockVelModel(2,1)).AND.(z.GE.BedrockVelModel(3,1))) THEN
-             MaterialVal(iElem,1:3) =   BedrockVelModel(2,2:4)
-         ELSEIF ((z.LT.BedrockVelModel(3,1)).AND.(z.GE.BedrockVelModel(4,1))) THEN
-             MaterialVal(iElem,1:3) =   BedrockVelModel(3,2:4)
-         ELSEIF ((z.LT.BedrockVelModel(4,1)).AND.(z.GE.BedrockVelModel(5,1))) THEN
-             MaterialVal(iElem,1:3) =   BedrockVelModel(4,2:4)
-         ELSEIF ((z.LT.BedrockVelModel(5,1)).AND.(z.GE.BedrockVelModel(6,1))) THEN
-             MaterialVal(iElem,1:3) =   BedrockVelModel(5,2:4)
-         ELSE
-             MaterialVal(iElem,1:3) =   BedrockVelModel(6,2:4)
-         ENDIF
-
+             z = MESH%ELEM%xyBary(3,iElem)
+             IF ((z.LT.BedrockVelModel(1,1)).AND.(z.GE.BedrockVelModel(2,1))) THEN
+                 MaterialVal(iElem,1:3) =   BedrockVelModel(1,2:4)
+             ELSEIF ((z.LT.BedrockVelModel(2,1)).AND.(z.GE.BedrockVelModel(3,1))) THEN
+                 MaterialVal(iElem,1:3) =   BedrockVelModel(2,2:4)
+             ELSEIF ((z.LT.BedrockVelModel(3,1)).AND.(z.GE.BedrockVelModel(4,1))) THEN
+                 MaterialVal(iElem,1:3) =   BedrockVelModel(3,2:4)
+             ELSEIF ((z.LT.BedrockVelModel(4,1)).AND.(z.GE.BedrockVelModel(5,1))) THEN
+                 MaterialVal(iElem,1:3) =   BedrockVelModel(4,2:4)
+             ELSEIF ((z.LT.BedrockVelModel(5,1)).AND.(z.GE.BedrockVelModel(6,1))) THEN
+                 MaterialVal(iElem,1:3) =   BedrockVelModel(5,2:4)
+             ELSE
+                 MaterialVal(iElem,1:3) =   BedrockVelModel(6,2:4)
+             ENDIF
          ENDDO
+#endif
+
       !
       CASE(101) ! special case of 3D complex medium, imposed without meshed layers
         ! media properties given as structured grid, which can be smaller than domain size
