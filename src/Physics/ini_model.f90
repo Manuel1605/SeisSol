@@ -644,10 +644,7 @@ CONTAINS
 #endif
         ENDDO
 
-	call system_clock(ende)
-	time=float(ende-start) ! evtl. cmax beachten!
-	write(*,*) "Zeit in Millisekunden: ",time
-	write(*,*) "Zeit in Sekunden: ", time/float(rate)
+
 
       CASE(60) ! special case of 1D layered medium, imposed without meshed layers for Landers 1992
                ! after Wald and Heaton 1994, Table 1
@@ -830,6 +827,7 @@ CONTAINS
       CASE(100) ! special case of 1D layered medium, imposed without meshed layers
       ! Northridge regional 1D velocity structure for rock sites after Wald et al. 1996
 
+        call system_clock(start,rate,cmax)
 #ifdef USE_IMPALAJIT
         DO iElem = 1, MESH%nElem
             z = MESH%ELEM%xyBary(3,iElem)
@@ -864,6 +862,9 @@ CONTAINS
              ENDIF
          ENDDO
 #endif
+        call system_clock(ende)
+        time=float(ende-start) ! evtl. cmax beachten!
+        write(*,*) "Zeit in Millisekunden: ",time
 
       !
       CASE(101) ! special case of 3D complex medium, imposed without meshed layers
